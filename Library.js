@@ -99,88 +99,87 @@ let songs = [
     { songName: "Right Round - Flo Rida", filePath: "songs/59.mp3", coverPath: "covers/Right Round - Flo Rida.jpg" },
 ]
 
-songItems.forEach((element, i) => {
-    element.getElementsByTagName("img")[0].src = songs[i].coverPath;
-    element.getElementsByClassName("songName")[0].innerText = songs[i].songName;
-})
+const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"></path></svg>';
+const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM14 5h4v14h-4z"></path></svg>';
+const previousIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 6l-9 6 9 6z"></path></svg>';
+const nextIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 6l9 6-9 6z"></path></svg>';
+const songPlayButtons = Array.from(document.getElementsByClassName('songItemPlay'));
 
-
-// Handle play/pause click
-masterPlay.addEventListener('click', () => {
-    if (audioElement.paused || audioElement.currentTime <= 0) {
-        audioElement.play();
-        masterPlay.classList.remove('fa-play-circle');
-        masterPlay.classList.add('fa-pause-circle');
-        gif.style.opacity = 1;
-    }
-    else {
-        audioElement.pause();
-        masterPlay.classList.remove('fa-pause-circle');
-        masterPlay.classList.add('fa-play-circle');
-        gif.style.opacity = 0;
-    }
-})
-// Listen to Events
-audioElement.addEventListener('timeupdate', () => {
-    // Update Seekbar
-    progress = parseInt((audioElement.currentTime / audioElement.duration) * 100);
-    ProgressBar.value = progress;
-})
-
-ProgressBar.addEventListener('change', () => {
-    audioElement.currentTime = ProgressBar.value * audioElement.duration / 100;
-})
-
-const makeAllPlays = () => {
-    Array.from(document.getElementsByClassName('songItemPlay')).forEach((element) => {
-        element.classList.remove('fa-pause-circle');
-        element.classList.add('fa-play-circle');
-    })
+function updatePlayIcons(isPlaying, activeButton = null) {
+    masterPlay.innerHTML = isPlaying ? pauseIcon : playIcon;
+    masterPlay.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+    songPlayButtons.forEach((button) => {
+        const isActive = isPlaying && button === activeButton;
+        button.innerHTML = isActive ? pauseIcon : playIcon;
+        const song = songs[Number(button.id)];
+        button.setAttribute('aria-label', `${isActive ? 'Pause' : 'Play'} ${song ? song.songName : 'song'}`);
+    });
 }
 
-Array.from(document.getElementsByClassName('songItemPlay')).forEach((element) => {
-    element.addEventListener('click', (e) => {
-        makeAllPlays();
-        songIndex = parseInt(e.target.id);
-        e.target.classList.remove('fa-play-circle');
-        e.target.classList.add('fa-pause-circle');
-        audioElement.src = `songs/${songIndex + 1}.mp3`;
-        masterSongName.innerText = songs[songIndex].songName;
-        audioElement.currentTime = 0;
-        audioElement.play();
-        gif.style.opacity = 1;
-        masterPlay.classList.remove('fa-play-circle');
-        masterPlay.classList.add('fa-pause-circle');
-    })
-})
-
-document.getElementById('next').addEventListener('click', () => {
-    if (songIndex >= 71) {
-        songIndex = 0
-    }
-    else {
-        songIndex += 1;
-    }
-    audioElement.src = `songs/${songIndex + 1}.mp3`;
-    masterSongName.innerText = songs[songIndex].songName;
+function playTrack(index) {
+    songIndex = (index + songs.length) % songs.length;
+    const song = songs[songIndex];
+    audioElement.src = song.filePath;
+    masterSongName.innerText = song.songName;
     audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
+    audioElement.play().catch((error) => {
+        console.error('Unable to play this track:', error);
+    });
+}
 
-})
+songItems.forEach((element, index) => {
+    const song = songs[index];
+    if (!song) {
+        return;
+    }
 
-document.getElementById('previous').addEventListener('click', () => {
-    if (songIndex <= 0) {
-        songIndex = 0
+    element.getElementsByTagName('img')[0].src = song.coverPath;
+    element.getElementsByClassName('songName')[0].innerText = song.songName;
+    const button = element.querySelector('.songItemPlay');
+    button.innerHTML = playIcon;
+    button.setAttribute('role', 'button');
+    button.setAttribute('tabindex', '0');
+    button.setAttribute('aria-label', `Play ${song.songName}`);
+    button.addEventListener('click', () => playTrack(index));
+    button.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            playTrack(index);
+        }
+    });
+});
+
+document.getElementById('previous').innerHTML = previousIcon;
+document.getElementById('next').innerHTML = nextIcon;
+updatePlayIcons(false);
+
+masterPlay.addEventListener('click', () => {
+    if (audioElement.paused) {
+        audioElement.play().catch((error) => {
+            console.error('Unable to play this track:', error);
+        });
+    } else {
+        audioElement.pause();
     }
-    else {
-        songIndex -= 1;
+});
+
+audioElement.addEventListener('play', () => updatePlayIcons(true, songPlayButtons[songIndex]));
+audioElement.addEventListener('pause', () => updatePlayIcons(false));
+audioElement.addEventListener('timeupdate', () => {
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+        ProgressBar.value = (audioElement.currentTime / audioElement.duration) * 100;
     }
-    audioElement.src = `songs/${songIndex + 1}.mp3`;
-    masterSongName.innerText = songs[songIndex].songName;
-    audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
-})
+});
+audioElement.addEventListener('error', () => {
+    console.error('Unable to load the selected audio track:', audioElement.src);
+    updatePlayIcons(false);
+});
+
+ProgressBar.addEventListener('input', () => {
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+        audioElement.currentTime = Number(ProgressBar.value) * audioElement.duration / 100;
+    }
+});
+
+document.getElementById('next').addEventListener('click', () => playTrack(songIndex + 1));
+document.getElementById('previous').addEventListener('click', () => playTrack(songIndex - 1));

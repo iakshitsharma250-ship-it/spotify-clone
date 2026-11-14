@@ -1,15 +1,16 @@
-﻿console.log("Welcome to Spotify");
-
-// Initialize the Variables
 let songIndex = 0;
-let audioElement = new Audio('songs/1.mp3');
+const audioElement = new Audio();
 let masterPlay = document.getElementById('masterPlay');
 let ProgressBar = document.getElementById('ProgressBar');
-let gif = document.getElementById('gif');
 let masterSongName = document.getElementById('masterSongName');
-let songItems = Array.from(document.getElementsByClassName('songitem'));
+let songList = document.getElementById('songList');
+let playerCover = document.getElementById('playerCover');
+let playerStatus = document.getElementById('playerStatus');
+let currentTimeLabel = document.getElementById('currentTime');
+let durationLabel = document.getElementById('duration');
+let currentSongCard = null;
 
-let songs = [
+const songs = [
     { songName: "AisayKaisay-Hasan Raheem", filePath: "songs/1.mp3", coverPath: "covers/Aisay Kaisay - Hasan Raheem.jpg" },
     { songName: "Attention-Charlie Puth", filePath: "songs/2.mp3", coverPath: "covers/Attention - Charlie Puth.jpg" },
     { songName: "Bikhra-Abdul Hannan", filePath: "songs/3.mp3", coverPath: "covers/Bikhra - Abdul Hannan.jpg" },
@@ -84,88 +85,146 @@ let songs = [
     { songName: "Без тебя я не я-JONY", filePath: "songs/72.mp3", coverPath: "covers/Без тебя я не я-JONY.jpg" },
 ]
 
-songItems.forEach((element, i) => {
-    element.getElementsByTagName("img")[0].src = songs[i].coverPath;
-    element.getElementsByClassName("songName")[0].innerText = songs[i].songName;
-})
+const unavailableTracks = new Set(['songs/41.mp3', 'songs/51.mp3', 'songs/52.mp3']);
+const availableSongs = songs.filter((song) => !unavailableTracks.has(song.filePath));
 
-
-// Handle play/pause click
-masterPlay.addEventListener('click', () => {
-    if (audioElement.paused || audioElement.currentTime <= 0) {
-        audioElement.play();
-        masterPlay.classList.remove('fa-play-circle');
-        masterPlay.classList.add('fa-pause-circle');
-        gif.style.opacity = 1;
+function formatTime(seconds) {
+    if (!Number.isFinite(seconds)) {
+        return '0:00';
     }
-    else {
-        audioElement.pause();
-        masterPlay.classList.remove('fa-pause-circle');
-        masterPlay.classList.add('fa-play-circle');
-        gif.style.opacity = 0;
-    }
-})
-// Listen to Events
-audioElement.addEventListener('timeupdate', () => {
-    // Update Seekbar
-    progress = parseInt((audioElement.currentTime / audioElement.duration) * 100);
-    ProgressBar.value = progress;
-})
 
-ProgressBar.addEventListener('change', () => {
-    audioElement.currentTime = ProgressBar.value * audioElement.duration / 100;
-})
-
-const makeAllPlays = () => {
-    Array.from(document.getElementsByClassName('songItemPlay')).forEach((element) => {
-        element.classList.remove('fa-pause-circle');
-        element.classList.add('fa-play-circle');
-    })
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${remainingSeconds}`;
 }
 
-Array.from(document.getElementsByClassName('songItemPlay')).forEach((element) => {
-    element.addEventListener('click', (e) => {
-        makeAllPlays();
-        songIndex = parseInt(e.target.id);
-        e.target.classList.remove('fa-play-circle');
-        e.target.classList.add('fa-pause-circle');
-        audioElement.src = `songs/${songIndex + 1}.mp3`;
-        masterSongName.innerText = songs[songIndex].songName;
-        audioElement.currentTime = 0;
-        audioElement.play();
-        gif.style.opacity = 1;
-        masterPlay.classList.remove('fa-play-circle');
-        masterPlay.classList.add('fa-pause-circle');
-    })
-})
+const playIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"></path></svg>';
+const pauseIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM14 5h4v14h-4z"></path></svg>';
+
+function updatePlayButton(isPlaying) {
+    masterPlay.innerHTML = isPlaying ? pauseIcon : playIcon;
+    masterPlay.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+
+    if (currentSongCard) {
+        const cardButton = currentSongCard.querySelector('.song-play');
+        cardButton.setAttribute('aria-label', `${isPlaying ? 'Pause' : 'Play'} ${availableSongs[songIndex].songName}`);
+        cardButton.innerHTML = isPlaying ? pauseIcon : playIcon;
+        currentSongCard.classList.toggle('is-playing', isPlaying);
+    }
+}
+
+function selectSong(index) {
+    songIndex = index;
+    const song = availableSongs[songIndex];
+
+    if (currentSongCard) {
+        currentSongCard.classList.remove('is-playing');
+    }
+
+    currentSongCard = songList.querySelector(`[data-song-index="${songIndex}"]`);
+    masterSongName.textContent = song.songName;
+    playerCover.src = `./${song.coverPath}`;
+    playerCover.alt = `${song.songName} cover`;
+    playerStatus.textContent = '';
+    currentTimeLabel.textContent = '0:00';
+    durationLabel.textContent = '0:00';
+    ProgressBar.value = 0;
+    audioElement.src = `./${song.filePath}`;
+    audioElement.load();
+    updatePlayButton(false);
+}
+
+function playSong(index) {
+    selectSong(index);
+    audioElement.play().catch((error) => {
+        console.error('Unable to play this track:', error);
+        playerStatus.textContent = 'This track could not be played. Try another song.';
+        updatePlayButton(false);
+    });
+}
+
+function renderSongs() {
+    const fragment = document.createDocumentFragment();
+
+    availableSongs.forEach((song, index) => {
+        const card = document.createElement('article');
+        card.className = 'song-card';
+        card.dataset.songIndex = index;
+
+        const cover = document.createElement('div');
+        cover.className = 'cover-wrap';
+
+        const image = document.createElement('img');
+        image.src = `./${song.coverPath}`;
+        image.alt = `${song.songName} cover`;
+        image.loading = 'lazy';
+        cover.appendChild(image);
+
+        const playButton = document.createElement('button');
+        playButton.className = 'song-play';
+        playButton.type = 'button';
+        playButton.setAttribute('aria-label', `Play ${song.songName}`);
+        playButton.innerHTML = playIcon;
+        playButton.addEventListener('click', () => playSong(index));
+        cover.appendChild(playButton);
+
+        const title = document.createElement('span');
+        title.className = 'song-title';
+        title.textContent = song.songName;
+
+        const description = document.createElement('span');
+        description.className = 'song-artist';
+        description.textContent = 'In your collection';
+
+        card.append(cover, title, description);
+        fragment.appendChild(card);
+    });
+
+    songList.replaceChildren(fragment);
+    document.getElementById('trackCount').textContent = `${availableSongs.length} tracks`;
+}
+
+renderSongs();
+selectSong(0);
+
+masterPlay.addEventListener('click', () => {
+    if (audioElement.paused) {
+        playSong(songIndex);
+    } else {
+        audioElement.pause();
+    }
+});
+
+audioElement.addEventListener('play', () => updatePlayButton(true));
+audioElement.addEventListener('pause', () => updatePlayButton(false));
+audioElement.addEventListener('loadedmetadata', () => {
+    durationLabel.textContent = formatTime(audioElement.duration);
+});
+audioElement.addEventListener('timeupdate', () => {
+    currentTimeLabel.textContent = formatTime(audioElement.currentTime);
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+        ProgressBar.value = (audioElement.currentTime / audioElement.duration) * 100;
+    }
+});
+audioElement.addEventListener('error', () => {
+    playerStatus.textContent = 'This track could not be loaded. Try another song.';
+    updatePlayButton(false);
+});
+
+ProgressBar.addEventListener('input', () => {
+    if (Number.isFinite(audioElement.duration) && audioElement.duration > 0) {
+        audioElement.currentTime = (Number(ProgressBar.value) / 100) * audioElement.duration;
+    }
+});
 
 document.getElementById('next').addEventListener('click', () => {
-    if (songIndex >= 71) {
-        songIndex = 0
-    }
-    else {
-        songIndex += 1;
-    }
-    audioElement.src = `songs/${songIndex + 1}.mp3`;
-    masterSongName.innerText = songs[songIndex].songName;
-    audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
-
-})
+    playSong((songIndex + 1) % availableSongs.length);
+});
 
 document.getElementById('previous').addEventListener('click', () => {
-    if (songIndex <= 0) {
-        songIndex = 0
-    }
-    else {
-        songIndex -= 1;
-    }
-    audioElement.src = `songs/${songIndex + 1}.mp3`;
-    masterSongName.innerText = songs[songIndex].songName;
-    audioElement.currentTime = 0;
-    audioElement.play();
-    masterPlay.classList.remove('fa-play-circle');
-    masterPlay.classList.add('fa-pause-circle');
-})
+    playSong((songIndex - 1 + availableSongs.length) % availableSongs.length);
+});
+
+audioElement.addEventListener('ended', () => {
+    playSong((songIndex + 1) % availableSongs.length);
+});

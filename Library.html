@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,46 +8,35 @@
     <link href="Navbar.css" rel="stylesheet" />
     <link href="Library.css" rel="stylesheet" />
     <link href="Home.css" rel="stylesheet" />
+    <link href="./Theme.css" rel="stylesheet" />
 </head>
 <body>
     <nav class="navbar">
         <ul class="navbar-nav">
             <li class="logo">
                 <a class="nav-link" href="./index.html">
-                    <img src="./Resources/spotify.svg" />
+                    <svg class="brand-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"></circle><path d="M6.5 9.2c4.2-1.2 8.5-.8 11.6 1.1M7.2 12.3c3.4-1 6.9-.6 9.6.9M8 15.3c2.6-.7 5.2-.4 7.2.7" fill="none" stroke="#101510" stroke-linecap="round" stroke-width="1.7"></path></svg>
                     <span class="link-text" >Spotify</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="./index.html">
-                    <img src="icons/home.svg" alt="Home" />
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
                     <span class="link-text">Home</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="./About.html">
-                    <img src="icons/about.svg" alt="About us" />
-                    <span class="link-text">About us</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="./Library.html">
-                    <img src="icons/library.svg" alt="Library" />
+                <a class="nav-link" href="./Library.html" aria-current="page">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 12h16M4 19h16"></path></svg>
                     <span class="link-text">Library</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <img src="icons/like.svg" alt="Rating & Review" />
-                    <span class="link-text">Rating & Review</span>
+                <a class="nav-link" href="./About.html">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M5 21a7 7 0 0 1 14 0"></path></svg>
+                    <span class="link-text">About</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <img src="icons/icons-solid.svg" alt="Request Songs" />
-                    <span class="link-text">Request Songs</span>
-                </a>
-            </li>                                                                                                                              
         </ul>                                                                       
     </nav>
     <main>
@@ -337,16 +326,15 @@
         <div class="bottom">
             <input type="range" name="range" id="ProgressBar" min="0" max="100" />
             <div class="icon">
-                <i class="fas fa-2x fa-step-backward" id="previous"></i>
-                <i class="far fa-2x fa-play-circle" id="masterPlay"></i>
-                <i class="fas fa-2x fa-step-forward" id="next"></i>
+                <button class="player-icon" id="previous" type="button" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 6l-9 6 9 6z"></path></svg></button>
+                <button class="player-icon play" id="masterPlay" type="button" aria-label="Play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 12 7-12 7z"></path></svg></button>
+                <button class="player-icon" id="next" type="button" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M5 6l9 6-9 6z"></path></svg></button>
             </div>
             <div class="songinfo">
-                <img src="playing.gif" width="45px" alt="" id="gif" /><span id="masterSongName"> Let me love you - Justin Bieber</span>
+                <img src="./Resources/playing.gif" width="45px" alt="" id="gif" /><span id="masterSongName"> Let me love you - Justin Bieber</span>
             </div>
         </div>
     </main>
     <script src="Library.js"></script>
-    <script src="https://kit.fontawesome.com/d5b2540b36.js" crossorigin="anonymous"></script>
 </body>
 </html>
